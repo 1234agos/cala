@@ -104,25 +104,48 @@ document.addEventListener('DOMContentLoaded', () => {
         renderProducts();
     };
 
-    window.addToCart = function(productId) {
-        const product = products.find(p => p.id === productId);
-        const existingItem = cart.find(item => item.id === productId);
+   // FUNCIÓN PARA MOSTRAR NOTIFICACIÓN
+function showNotification(product) {
+    const notification = document.createElement('div');
+    notification.className = 'toast-notification';
+    notification.innerHTML = `
+        <div class="toast-icon">${product.icon}</div>
+        <div class="toast-content">
+            <div class="toast-title">¡Agregado al carrito!</div>
+            <div class="toast-product">${product.name}</div>
+        </div>
+        <div class="toast-close" onclick="this.parentElement.remove()">×</div>
+    `;
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.classList.add('show'), 10);
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
 
-        if (existingItem) {
-            existingItem.quantity++;
-        } else {
-            cart.push({ ...product, quantity: 1 });
-        }
+window.addToCart = function(productId) {
+    const product = products.find(p => p.id === productId);
+    const existingItem = cart.find(item => item.id === productId);
 
-        saveCart(); // GUARDAR EN LOCALSTORAGE
-        updateCart();
-        
-        // Animación visual de feedback
-        const cartBtn = document.querySelector('.cart-btn');
-        cartBtn.style.transform = 'scale(1.2)';
-        setTimeout(() => cartBtn.style.transform = 'scale(1)', 300);
-    };
+    if (existingItem) {
+        existingItem.quantity++;
+    } else {
+        cart.push({ ...product, quantity: 1 });
+    }
 
+    saveCart();
+    updateCart();
+    
+    // Mostrar notificación
+    showNotification(product);
+    
+    const cartBtn = document.querySelector('.cart-btn');
+    cartBtn.style.transform = 'scale(1.2)';
+    setTimeout(() => cartBtn.style.transform = 'scale(1)', 300);
+};
     window.updateQuantity = function(productId, change) {
         const item = cart.find(i => i.id === productId);
         if (item) {
