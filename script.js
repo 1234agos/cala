@@ -117,6 +117,33 @@ window.filterCategory = function(category) {
     renderProducts();
 };
 
+// Función para mostrar notificación
+function showNotification(message, icon) {
+    // Crear elemento de notificación
+    const notification = document.createElement('div');
+    notification.className = 'notification-toast';
+    notification.innerHTML = `
+        <span style="font-size: 2rem; margin-right: 10px;">${icon}</span>
+        <span>${message}</span>
+    `;
+    
+    // Agregar al body
+    document.body.appendChild(notification);
+    
+    // Mostrar con animación
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+    
+    // Ocultar y eliminar después de 3 segundos
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 3000);
+}
+
 window.addToCart = function(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -125,8 +152,10 @@ window.addToCart = function(productId) {
 
     if (existingItem) {
         existingItem.quantity++;
+        showNotification(`${product.name} (x${existingItem.quantity})`, product.icon);
     } else {
         cart.push({ ...product, quantity: 1 });
+        showNotification(`${product.name} agregado al carrito`, product.icon);
     }
 
     updateCart();
@@ -209,10 +238,6 @@ document.getElementById('productModal').addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
 });
-   
-              
-  
-
    
         
   
