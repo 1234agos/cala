@@ -7,7 +7,37 @@ const firebaseConfig = {
     messagingSenderId: "899679625263",
     appId: "1:899679625263:web:3e5719635df658284de6da"
 };
+// Inicializar Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
+let products = [];
+let cart = [];
+let currentCategory = 'todos';
+let selectedProduct = null;
+
+// Cargar productos desde Firebase
+async function loadProducts() {
+    try {
+        console.log('Intentando cargar productos...');
+        const productsSnapshot = await db.collection('productos').get();
+        products = [];
+        
+        productsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            console.log('Producto cargado:', doc.id, data);
+            products.push({
+                id: doc.id,
+                name: data.name || 'Sin nombre',
+                price: data.price || 0,
+                category: data.category || 'galletitas',
+                icon: data.icon || '🍪',
+                desc: data.desc || 'Producto delicioso'
+            });
+        });
+        
+        console.log('Total productos cargados:', products.length);
+        
 
         if (products.length === 0) {
             document.getElementById('productsGrid').innerHTML = `
