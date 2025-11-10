@@ -28,7 +28,7 @@ async function loadProducts() {
             console.log('Producto cargado:', doc.id, data);
             products.push({
                 id: doc.id,
-            name: data.name || 'matcha',
+            name: data.name || 'postres',
                 price: data.price || 0,
                 category: data.category || 'galletitas',
                 icon: data.icon || '🍪',
