@@ -1,4 +1,4 @@
-// Configuración de Firebase
+// Configuración de Firebase (conecta tu sitio con tu base de datos)
 const firebaseConfig = {
     apiKey: "AIzaSyA0LSjZohUltLII3Vnp6rH9iXbl5JByqAI",
     authDomain: "cala-92860.firebaseapp.com",
@@ -7,38 +7,43 @@ const firebaseConfig = {
     messagingSenderId: "899679625263",
     appId: "1:899679625263:web:3e5719635df658284de6da"
 };
-// Inicializar Firebase
+
+// Inicializa Firebase
 firebase.initializeApp(firebaseConfig);
+
+// Crea una referencia a la base de datos Firestore
 const db = firebase.firestore();
 
-let products = [];
-let cart = JSON.parse(localStorage.getItem('calaCookiesCart')) || [];
-let currentCategory = 'todos';
-let selectedProduct = null;
+// Variables globales
+let products = []; // Lista de productos desde Firebase
+let cart = JSON.parse(localStorage.getItem('calaCookiesCart')) || []; // Carrito almacenado en localStorage
+let currentCategory = 'todos'; // Categoría seleccionada actualmente
+let selectedProduct = null; // Producto mostrado en el modal
 
 // Cargar productos desde Firebase
 async function loadProducts() {
     try {
         console.log('Intentando cargar productos...');
-        const productsSnapshot = await db.collection('productos').get();
+        const productsSnapshot = await db.collection('productos').get(); // Obtiene los documentos de la colección
         products = [];
-        
+
+        // Recorre cada producto y lo agrega al array
         productsSnapshot.forEach((doc) => {
             const data = doc.data();
             console.log('Producto cargado:', doc.id, data);
             products.push({
                 id: doc.id,
-            name: data.name || 'postres',
+                name: data.name || 'Sin nombre',
                 price: data.price || 0,
                 category: data.category || 'galletitas',
                 icon: data.icon || '🍪',
                 desc: data.desc || 'Producto delicioso'
             });
         });
-        
-        console.log('Total productos cargados:', products.length);
-        
 
+        console.log('Total productos cargados:', products.length);
+
+        // Si no hay productos, muestra un mensaje
         if (products.length === 0) {
             document.getElementById('productsGrid').innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
@@ -47,13 +52,14 @@ async function loadProducts() {
                 </div>
             `;
         } else {
-            renderProducts();
+            renderProducts(); // Muestra los productos en la página
         }
     } catch (error) {
+        // Si ocurre un error, muestra un mensaje
         console.error('Error al cargar productos:', error);
         document.getElementById('productsGrid').innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
-                <p style="font-size: 1.5rem; color: #ff6bb3;">❌ Error al cargar productos</p>
+                <p style="font-size: 1.5rem; color: #ff6bb3;">Error al cargar productos</p>
                 <p style="margin-top: 1rem; color: #666;">${error.message}</p>
                 <button onclick="loadProducts()" style="margin-top: 1rem; padding: 0.7rem 2rem; background: #ff6bb3; color: white; border: none; border-radius: 25px; cursor: pointer;">Reintentar</button>
             </div>
@@ -61,12 +67,16 @@ async function loadProducts() {
     }
 }
 
+// Muestra los productos en el HTML
 function renderProducts() {
     const grid = document.getElementById('productsGrid');
+    
+    // Filtra por categoría
     const filtered = currentCategory === 'todos'
         ? products
         : products.filter(p => p.category === currentCategory);
 
+    // Crea las tarjetas de producto
     grid.innerHTML = filtered.map(product => `
         <div class="product-card" onclick="showProductModal('${product.id}')">
             <div class="product-img">${product.icon || '🍪'}</div>
@@ -80,6 +90,7 @@ function renderProducts() {
     `).join('');
 }
 
+// Muestra el modal con los detalles de un producto
 window.showProductModal = function(id) {
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
@@ -97,10 +108,12 @@ window.showProductModal = function(id) {
     document.getElementById('productModal').style.display = 'block';
 };
 
+// Cierra el modal del producto
 window.closeProductModal = function() {
     document.getElementById('productModal').style.display = 'none';
 };
 
+// Agrega producto al carrito desde el modal
 window.addFromModal = function() {
     if (selectedProduct) {
         addToCart(selectedProduct.id);
@@ -108,6 +121,7 @@ window.addFromModal = function() {
     }
 };
 
+// Filtra productos por categoría
 window.filterCategory = function(category) {
     currentCategory = category;
     document.querySelectorAll('.category-btn').forEach(btn => {
@@ -117,9 +131,8 @@ window.filterCategory = function(category) {
     renderProducts();
 };
 
-// Función para mostrar notificación
+// Muestra una notificación temporal
 function showNotification(message, icon) {
-    // Crear elemento de notificación
     const notification = document.createElement('div');
     notification.className = 'notification-toast';
     notification.innerHTML = `
@@ -127,23 +140,19 @@ function showNotification(message, icon) {
         <span>${message}</span>
     `;
     
-    // Agregar al body
     document.body.appendChild(notification);
     
-    // Mostrar con animación
-    setTimeout(() => {
-        notification.classList.add('show');
-    }, 10);
-    
-    // Ocultar y eliminar después de 3 segundos
+    // Aparece con animación
+    setTimeout(() => notification.classList.add('show'), 10);
+
+    // Desaparece después de 3 segundos
     setTimeout(() => {
         notification.classList.remove('show');
-        setTimeout(() => {
-            notification.remove();
-        }, 300);
+        setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
 
+// Agrega un producto al carrito
 window.addToCart = function(productId) {
     const product = products.find(p => p.id === productId);
     if (!product) return;
@@ -161,6 +170,7 @@ window.addToCart = function(productId) {
     updateCart();
 };
 
+// Cambia la cantidad de un producto en el carrito
 window.updateQuantity = function(productId, change) {
     const item = cart.find(i => i.id === productId);
     if (item) {
@@ -172,22 +182,25 @@ window.updateQuantity = function(productId, change) {
     }
 };
 
+// Actualiza el contenido del carrito en pantalla
 function updateCart() {
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0); // Cantidad total
     document.getElementById('cartCount').textContent = cartCount;
 
     const cartItems = document.getElementById('cartItems');
 
+    // Si el carrito está vacío
     if (cart.length === 0) {
         cartItems.innerHTML = `
             <div class="empty-cart">
                 <span class="empty-cart-emoji">🛒</span>
                 <div>Tu carrito está vacío</div>
-                <div style="margin-top: 10px; font-size: 16px;">¡Agrega algunos productos deliciosos!</div>
+                <div style="margin-top: 10px; font-size: 16px;">Agrega algunos productos deliciosos</div>
             </div>
         `;
         document.getElementById('cartTotal').textContent = '';
     } else {
+        // Si hay productos en el carrito
         cartItems.innerHTML = cart.map(item => `
             <div class="cart-item">
                 <div class="cart-item-info">
@@ -202,30 +215,34 @@ function updateCart() {
             </div>
         `).join('');
 
+        // Calcula el total del carrito
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        document.getElementById('cartTotal').innerHTML = `💰 Total: $${total}`;
+        document.getElementById('cartTotal').innerHTML = `Total: $${total}`;
     }
 }
 
+// Abre o cierra el modal del carrito
 window.toggleCart = function() {
     const modal = document.getElementById('cartModal');
     modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
 };
 
+// Finaliza la compra
 window.checkout = function() {
     if (cart.length === 0) {
-        alert('⌨ Tu carrito está vacío');
+        alert('Tu carrito está vacío');
         return;
     }
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const itemsList = cart.map(item => `${item.icon} ${item.name} x${item.quantity}`).join('\n');
-    alert(`✅ ¡Gracias por tu compra!\n\n${itemsList}\n\n💰 Total: $${total}\n\n🎉 ¡Pronto recibirás tus deliciosos productos! 🍪💕`);
-    cart = [];
-    updateCart();
-    toggleCart();
+    alert(`Gracias por tu compra:\n\n${itemsList}\n\nTotal: $${total}\n\nTu pedido está en preparación.`);
+    
+    cart = []; // Vacía el carrito
+    updateCart(); // Actualiza el HTML
+    toggleCart(); // Cierra el modal
 };
 
-// Cerrar modales al hacer clic fuera
+// Cierra los modales al hacer clic fuera de ellos
 document.getElementById('cartModal').addEventListener('click', function(e) {
     if (e.target === this) toggleCart();
 });
@@ -234,10 +251,7 @@ document.getElementById('productModal').addEventListener('click', function(e) {
     if (e.target === this) closeProductModal();
 });
 
-// Cargar productos al iniciar
+// Carga los productos automáticamente al iniciar la página
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
 });
-   
-        
-  
