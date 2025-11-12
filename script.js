@@ -12,7 +12,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 let products = [];
-let cart = [];
+let cart = JSON.parse(localStorage.getItem('calaCookiesCart')) || [];
 let currentCategory = 'todos';
 let selectedProduct = null;
 
