@@ -82,7 +82,7 @@ function renderProducts() {
             <div class="product-img">${product.icon || '🍪'}</div>
             <div class="product-name">${product.name || 'Sin nombre'}</div>
             <div class="product-desc">${product.desc ? product.desc.substring(0, 70) + '...' : 'Producto delicioso'}</div>
-            <div class="product-price">${product.price || 0}</div>
+            <div class="product-price">$${(product.price || 0).toLocaleString('es-AR')}</div>
             <button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}')">
                 🛒 Agregar
             </button>
@@ -101,7 +101,7 @@ window.showProductModal = function(id) {
         <div class="modal-icon">${selectedProduct.icon}</div>
         <h2 id="modalTitle">${selectedProduct.icon} ${selectedProduct.name}</h2>
         <p id="modalDesc">${selectedProduct.desc}</p>
-        <div class="modal-price" id="modalPrice">$${selectedProduct.price}</div>
+        <div class="modal-price" id="modalPrice">$${selectedProduct.price.toLocaleString('es-AR')}</div>
         <button class="add-to-cart" onclick="addFromModal()">🛒 Agregar al Carrito</button>
     `;
     
@@ -122,12 +122,14 @@ window.addFromModal = function() {
 };
 
 // Filtra productos por categoría
-window.filterCategory = function(category) {
+window.filterCategory = function(category, event) {
     currentCategory = category;
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active');
     });
-    event.currentTarget.classList.add('active');
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
     renderProducts();
 };
 
@@ -184,6 +186,9 @@ window.updateQuantity = function(productId, change) {
 
 // Actualiza el contenido del carrito en pantalla
 function updateCart() {
+    // GUARDAR EN LOCALSTORAGE (CORRECCIÓN IMPORTANTE)
+    localStorage.setItem('calaCookiesCart', JSON.stringify(cart));
+    
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0); // Cantidad total
     document.getElementById('cartCount').textContent = cartCount;
 
@@ -205,7 +210,7 @@ function updateCart() {
             <div class="cart-item">
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.icon} ${item.name}</div>
-                    <div style="color: #ff6bb3; font-weight: 900; font-size: 18px;">$${item.price}</div>
+                    <div style="color: #ff6bb3; font-weight: 900; font-size: 18px;">$${(item.price || 0).toLocaleString('es-AR')}</div>
                 </div>
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
@@ -217,7 +222,7 @@ function updateCart() {
 
         // Calcula el total del carrito
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        document.getElementById('cartTotal').innerHTML = `Total: $${total}`;
+        document.getElementById('cartTotal').innerHTML = `Total: $${total.toLocaleString('es-AR')}`;
     }
 }
 
@@ -235,7 +240,7 @@ window.checkout = function() {
     }
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const itemsList = cart.map(item => `${item.icon} ${item.name} x${item.quantity}`).join('\n');
-    alert(`Gracias por tu compra:\n\n${itemsList}\n\nTotal: $${total}\n\nTu pedido está en preparación.`);
+    alert(`Gracias por tu compra:\n\n${itemsList}\n\nTotal: $${total.toLocaleString('es-AR')}\n\nTu pedido está en preparación.`);
     
     cart = []; // Vacía el carrito
     updateCart(); // Actualiza el HTML
@@ -254,4 +259,5 @@ document.getElementById('productModal').addEventListener('click', function(e) {
 // Carga los productos automáticamente al iniciar la página
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts();
+    updateCart(); // Inicializa el carrito con los datos guardados
 });
