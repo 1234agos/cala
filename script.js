@@ -1,4 +1,5 @@
-// Configuración de Firebase (conecta tu sitio con tu base de datos)
+// CONFIGURACIÓN E INICIALIZACIÓN DE FIREBASE
+// Configuración de Firebase 
 const firebaseConfig = {
     apiKey: "AIzaSyA0LSjZohUltLII3Vnp6rH9iXbl5JByqAI",
     authDomain: "cala-92860.firebaseapp.com",
@@ -8,29 +9,43 @@ const firebaseConfig = {
     appId: "1:899679625263:web:3e5719635df658284de6da"
 };
 
-// Inicializa Firebase
+// Inicializa Firebase con los datos de arriba
 firebase.initializeApp(firebaseConfig);
 
 // Crea una referencia a la base de datos Firestore
 const db = firebase.firestore();
 
-// Variables globales
-let products = []; // Lista de productos desde Firebase
-let cart = JSON.parse(localStorage.getItem('calaCookiesCart')) || []; // Carrito almacenado en localStorage
-let currentCategory = 'todos'; // Categoría seleccionada actualmente
-let selectedProduct = null; // Producto mostrado en el modal
 
-// Cargar productos desde Firebase
+//  VARIABLES GLOBALES
+// Lista de productos que vienen desde Firebase
+let products = [];
+
+// Carrito guardado en localStorage para que persista al recargar
+let cart = JSON.parse(localStorage.getItem('calaCookiesCart')) || [];
+
+// Categoría seleccionada actualmente (para filtrar)
+let currentCategory = 'todos';
+
+// Producto que se muestra actualmente en el modal
+let selectedProduct = null;
+
+
+
+//  FUNCIÓN PARA CARGAR PRODUCTOS DESDE FIRESTORE
 async function loadProducts() {
     try {
         console.log('Intentando cargar productos...');
-        const productsSnapshot = await db.collection('productos').get(); // Obtiene los documentos de la colección
+
+        // Trae todos los documentos de la colección "productos"
+        const productsSnapshot = await db.collection('productos').get();
+
         products = [];
 
-        // Recorre cada producto y lo agrega al array
+        // Recorre cada documento y lo agrega a la lista local
         productsSnapshot.forEach((doc) => {
             const data = doc.data();
             console.log('Producto cargado:', doc.id, data);
+
             products.push({
                 id: doc.id,
                 name: data.name || 'Sin nombre',
@@ -43,7 +58,7 @@ async function loadProducts() {
 
         console.log('Total productos cargados:', products.length);
 
-        // Si no hay productos, muestra un mensaje
+        // Si no hay productos en Firebase → mostrar mensaje
         if (products.length === 0) {
             document.getElementById('productsGrid').innerHTML = `
                 <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
@@ -52,11 +67,13 @@ async function loadProducts() {
                 </div>
             `;
         } else {
-            renderProducts(); // Muestra los productos en la página
+            renderProducts(); // Mostrar productos en pantalla
         }
+
     } catch (error) {
-        // Si ocurre un error, muestra un mensaje
         console.error('Error al cargar productos:', error);
+
+        // Mensaje de error visible para el usuario
         document.getElementById('productsGrid').innerHTML = `
             <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
                 <p style="font-size: 1.5rem; color: #ff6bb3;">Error al cargar productos</p>
@@ -67,11 +84,13 @@ async function loadProducts() {
     }
 }
 
-// Muestra los productos en el HTML
+
+
+//  FUNCIÓN PARA MOSTRAR PRODUCTOS EN EL HTML
 function renderProducts() {
     const grid = document.getElementById('productsGrid');
-    
-    // Filtra por categoría
+
+    // Filtra por categoría seleccionada
     const filtered = currentCategory === 'todos'
         ? products
         : products.filter(p => p.category === currentCategory);
@@ -79,41 +98,55 @@ function renderProducts() {
     // Crea las tarjetas de producto
     grid.innerHTML = filtered.map(product => `
         <div class="product-card" onclick="showProductModal('${product.id}')">
+
             <div class="product-img">${product.icon || '🍪'}</div>
+
             <div class="product-name">${product.name || 'Sin nombre'}</div>
+
             <div class="product-desc">${product.desc ? product.desc.substring(0, 70) + '...' : 'Producto delicioso'}</div>
+
             <div class="product-price">$${(product.price || 0).toLocaleString('es-AR')}</div>
+
             <button class="add-to-cart" onclick="event.stopPropagation(); addToCart('${product.id}')">
                 🛒 Agregar
             </button>
+
         </div>
     `).join('');
 }
 
-// Muestra el modal con los detalles de un producto
+
+//  MODAL DEL PRODUCTO SELECCIONADO
 window.showProductModal = function(id) {
+
+    // Buscar el producto según el ID
     selectedProduct = products.find(p => p.id === id);
     if (!selectedProduct) return;
-    
+
     const modalContent = document.querySelector('.product-modal-content');
+
+    // Rellena el modal con los datos del producto
     modalContent.innerHTML = `
         <span class="close-modal" onclick="closeProductModal()">×</span>
         <div class="modal-icon">${selectedProduct.icon}</div>
         <h2 id="modalTitle">${selectedProduct.icon} ${selectedProduct.name}</h2>
         <p id="modalDesc">${selectedProduct.desc}</p>
         <div class="modal-price" id="modalPrice">$${selectedProduct.price.toLocaleString('es-AR')}</div>
+
         <button class="add-to-cart" onclick="addFromModal()">🛒 Agregar al Carrito</button>
     `;
-    
+
     document.getElementById('productModal').style.display = 'block';
 };
 
-// Cierra el modal del producto
+
+// Cerrar modal
 window.closeProductModal = function() {
     document.getElementById('productModal').style.display = 'none';
 };
 
-// Agrega producto al carrito desde el modal
+
+// Agregar desde el modal
 window.addFromModal = function() {
     if (selectedProduct) {
         addToCart(selectedProduct.id);
@@ -121,44 +154,58 @@ window.addFromModal = function() {
     }
 };
 
-// Filtra productos por categoría
+
+
+//  FILTRAR POR CATEGORÍAS
 window.filterCategory = function(category, event) {
     currentCategory = category;
+
+    // Actualiza el botón activo visualmente
     document.querySelectorAll('.category-btn').forEach(btn => {
         btn.classList.remove('active');
     });
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
     }
+
     renderProducts();
 };
 
-// Muestra una notificación temporal
+
+
+//  NOTIFICACIÓN AL AGREGAR AL CARRITO
 function showNotification(message, icon) {
+
+    // Crea un pequeño "toast"
     const notification = document.createElement('div');
     notification.className = 'notification-toast';
     notification.innerHTML = `
         <span style="font-size: 2rem; margin-right: 10px;">${icon}</span>
         <span>${message}</span>
     `;
-    
+
     document.body.appendChild(notification);
-    
-    // Aparece con animación
+
+    // Aparece animado
     setTimeout(() => notification.classList.add('show'), 10);
 
-    // Desaparece después de 3 segundos
+    // Desaparece luego de 3 segundos
     setTimeout(() => {
         notification.classList.remove('show');
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
 
-// Agrega un producto al carrito
+
+
+//  AGREGAR PRODUCTO AL CARRITO
 window.addToCart = function(productId) {
+
+    // Busca el producto
     const product = products.find(p => p.id === productId);
     if (!product) return;
-    
+
+    // Busca si ya está en el carrito
     const existingItem = cart.find(item => item.id === productId);
 
     if (existingItem) {
@@ -169,32 +216,42 @@ window.addToCart = function(productId) {
         showNotification(`${product.name} agregado al carrito`, product.icon);
     }
 
-    updateCart();
+    updateCart(); // Actualiza el carrito en pantalla
 };
 
-// Cambia la cantidad de un producto en el carrito
+
+//  CAMBIAR CANTIDAD EN EL CARRITO
 window.updateQuantity = function(productId, change) {
+
     const item = cart.find(i => i.id === productId);
+
     if (item) {
         item.quantity += change;
+
+        // Si se queda en 0, se elimina
         if (item.quantity <= 0) {
             cart = cart.filter(i => i.id !== productId);
         }
+
         updateCart();
     }
 };
 
-// Actualiza el contenido del carrito en pantalla
+
+
+// ACTUALIZA EL CONTENIDO DEL CARRITO
 function updateCart() {
-    // GUARDAR EN LOCALSTORAGE (CORRECCIÓN IMPORTANTE)
+
+    // Guarda el carrito en localStorage (muy importante)
     localStorage.setItem('calaCookiesCart', JSON.stringify(cart));
-    
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0); // Cantidad total
+
+    // Cantidad total para el ícono del carrito
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     document.getElementById('cartCount').textContent = cartCount;
 
     const cartItems = document.getElementById('cartItems');
 
-    // Si el carrito está vacío
+    // Si está vacío
     if (cart.length === 0) {
         cartItems.innerHTML = `
             <div class="empty-cart">
@@ -204,35 +261,47 @@ function updateCart() {
             </div>
         `;
         document.getElementById('cartTotal').textContent = '';
-    } else {
-        // Si hay productos en el carrito
+    }
+
+    // Si tiene productos
+    else {
         cartItems.innerHTML = cart.map(item => `
             <div class="cart-item">
+
                 <div class="cart-item-info">
                     <div class="cart-item-name">${item.icon} ${item.name}</div>
-                    <div style="color: #ff6bb3; font-weight: 900; font-size: 18px;">$${(item.price || 0).toLocaleString('es-AR')}</div>
+                    <div style="color: #ff6bb3; font-weight: 900; font-size: 18px;">
+                        $${(item.price || 0).toLocaleString('es-AR')}
+                    </div>
                 </div>
+
                 <div class="cart-item-controls">
                     <button class="qty-btn" onclick="updateQuantity('${item.id}', -1)">−</button>
                     <span class="qty-display">${item.quantity}</span>
                     <button class="qty-btn" onclick="updateQuantity('${item.id}', 1)">+</button>
                 </div>
+
             </div>
         `).join('');
 
-        // Calcula el total del carrito
+        // Total de la compra
         const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
         document.getElementById('cartTotal').innerHTML = `Total: $${total.toLocaleString('es-AR')}`;
     }
 }
 
-// Abre o cierra el modal del carrito
+
+
+//  ABRIR / CERRAR MODAL DEL CARRITO
+
 window.toggleCart = function() {
     const modal = document.getElementById('cartModal');
     modal.style.display = modal.style.display === 'block' ? 'none' : 'block';
 };
 
-// Finaliza la compra
+
+
+//  FINALIZAR COMPRA
 window.checkout = function() {
     if (cart.length === 0) {
         alert('Tu carrito está vacío');
@@ -241,13 +310,14 @@ window.checkout = function() {
     const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const itemsList = cart.map(item => `${item.icon} ${item.name} x${item.quantity}`).join('\n');
     alert(`Gracias por tu compra:\n\n${itemsList}\n\nTotal: $${total.toLocaleString('es-AR')}\n\nTu pedido está en preparación.`);
-    
-    cart = []; // Vacía el carrito
-    updateCart(); // Actualiza el HTML
-    toggleCart(); // Cierra el modal
+    cart = []; // Vaciar carrito
+    updateCart();
+    toggleCart();
 };
 
-// Cierra los modales al hacer clic fuera de ellos
+
+
+//  CERRAR MODALES AL CLICKEAR AFUERA
 document.getElementById('cartModal').addEventListener('click', function(e) {
     if (e.target === this) toggleCart();
 });
@@ -256,8 +326,16 @@ document.getElementById('productModal').addEventListener('click', function(e) {
     if (e.target === this) closeProductModal();
 });
 
-// Carga los productos automáticamente al iniciar la página
+
+
+//  EJECUTAR AL INICIAR LA PÁGINA
 document.addEventListener('DOMContentLoaded', () => {
+
+    // Cargar productos desde Firebase
     loadProducts();
-    updateCart(); // Inicializa el carrito con los datos guardados
+
+    // Actualizar carrito con datos guardados
+    updateCart();
 });
+
+
