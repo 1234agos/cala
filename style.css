@@ -48,7 +48,7 @@ body {
 }
 
 .nav-link:hover {
-    color: #fae9f1 !important;
+    color: rgb(44, 39, 41) !important;
     transform: translateY(-2px);
 }
 
