@@ -42,13 +42,13 @@ body {
 }
 
 .nav-link {
-    color: #ff8dc7 !important;
+    color: rgba(245, 229, 237, 1)ff !important;
     font-weight: 700;
     transition: all 0.2s;
 }
 
 .nav-link:hover {
-    color: #ff6bb3 !important;
+    color: #fae9f1 !important;
     transform: translateY(-2px);
 }
 
